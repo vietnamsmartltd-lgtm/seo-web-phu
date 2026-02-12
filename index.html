@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Dashboard — Báo cáo Tiến độ Từ khoá</title>
+    <meta name="description"
+        content="Dashboard tổng hợp báo cáo SEO keyword ranking, so sánh từng tháng, phân tích tiến độ tự động.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Đang tải dữ liệu từ Google Sheets...</p>
+            <div class="loading-progress">
+                <div class="loading-progress-bar" id="loading-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="app hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-inner">
+                <div class="header-left">
+                    <div class="logo">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="logo-text">
+                            <h1>SEO Dashboard</h1>
+                            <span class="logo-subtitle">Báo cáo Tiến độ Từ khoá</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-ghost" id="btn-refresh" title="Tải lại dữ liệu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                            height="16">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        <span>Tải lại</span>
+                    </button>
+                    <div class="last-update" id="last-update"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation tabs -->
+        <nav class="nav-tabs" id="nav-tabs">
+            <div class="nav-tabs-inner">
+                <button class="tab-btn active" data-tab="overview">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Tổng quan
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <!-- Overview Tab -->
+            <section id="tab-overview" class="tab-panel active">
+                <!-- Active Month Indicator -->
+                <div class="active-month-bar" id="active-month-bar">
+                    <div class="active-month-info">
+                        <div class="active-month-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                                height="20">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                        <div class="active-month-text">
+                            <span class="active-month-label">Đang hiển thị dữ liệu</span>
+                            <span class="active-month-value" id="active-month-value">—</span>
+                        </div>
+                    </div>
+                    <div class="active-month-selector">
+                        <select id="overview-month-select" class="select-control month-select-primary"></select>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-cards" id="summary-cards"></div>
+
+                <!-- Staff Leaderboard — PRIMARY SECTION -->
+                <div class="staff-section">
+                    <div class="section-header">
+                        <h3>🏆 Bảng xếp hạng nhân sự</h3>
+                    </div>
+                    <div class="staff-leaderboard" id="staff-leaderboard"></div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="charts-row">
+                    <div class="chart-card" id="chart-overall-progress">
+                        <div class="chart-header">
+                            <h3>Tiến độ theo Website</h3>
+                            <span class="chart-month-badge" id="chart-overall-month"></span>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="canvas-overall"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card" id="chart-monthly-trend">
+                        <div class="chart-header">
+                            <h3>Xu hướng theo tháng</h3>
+                            <div class="chart-legend" id="trend-legend"></div>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="canvas-trend"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison -->
+                <div class="comparison-section">
+                    <div class="section-header">
+                        <h3>So sánh giữa các tháng</h3>
+                        <div class="section-controls">
+                            <select id="compare-month-1" class="select-control"></select>
+                            <span class="vs-badge">VS</span>
+                            <select id="compare-month-2" class="select-control"></select>
+                        </div>
+                    </div>
+                    <div class="comparison-grid" id="comparison-grid"></div>
+                </div>
+            </section>
+
+            <!-- Dynamic website tabs will be inserted here -->
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
