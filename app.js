@@ -708,10 +708,24 @@ function renderComparison() {
     const select2 = document.getElementById('compare-month-2');
     const optionsHTML = state.allMonths.map(m => `<option value="${m}">${formatMonthDisplay(m)}</option>`).join('');
     select1.innerHTML = optionsHTML; select2.innerHTML = optionsHTML;
-    const latestData = getLatestMonthWithData();
-    const latestIdx = state.allMonths.indexOf(latestData);
-    if (latestIdx > 0) { select1.value = state.allMonths[latestIdx - 1]; select2.value = latestData; }
-    else if (state.allMonths.length >= 2) { select1.value = state.allMonths[state.allMonths.length - 2]; select2.value = state.allMonths[state.allMonths.length - 1]; }
+    // Default comparison: use previous month (excluding current month) as the latest
+    // e.g. if today is March 2026, compare T1/2026 vs T2/2026
+    const now = new Date();
+    const currentMonthValue = now.getFullYear() * 12 + (now.getMonth() + 1);
+    const completedMonths = state.allMonths.filter(m => {
+        const [mm, yy] = m.replace('T', '').split('/').map(Number);
+        return (yy * 12 + mm) < currentMonthValue;
+    });
+    if (completedMonths.length >= 2) {
+        select1.value = completedMonths[completedMonths.length - 2];
+        select2.value = completedMonths[completedMonths.length - 1];
+    } else if (completedMonths.length === 1) {
+        select1.value = completedMonths[0];
+        select2.value = completedMonths[0];
+    } else if (state.allMonths.length >= 2) {
+        select1.value = state.allMonths[state.allMonths.length - 2];
+        select2.value = state.allMonths[state.allMonths.length - 1];
+    }
     updateComparison();
     select1.addEventListener('change', updateComparison);
     select2.addEventListener('change', updateComparison);
