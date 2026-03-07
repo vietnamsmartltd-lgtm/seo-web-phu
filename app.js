@@ -581,9 +581,18 @@ function renderStaffPerformance() {
 // ============================================
 function renderAccumulation() {
     const container = document.getElementById('accumulation-grid');
+    // Determine the cutoff: only show months up to (and including) previous month
+    // Current month data is not finalized yet (usually compiled in early days of next month)
+    const now = new Date();
+    const currentMonthValue = now.getFullYear() * 12 + (now.getMonth() + 1); // current month (1-indexed)
     container.innerHTML = CONFIG.SHEETS.map(sheet => {
         const site = state.sites[sheet.name]; if (!site) return '';
-        const months = state.allMonths.filter(m => site.months[m]?.keywords.length > 0);
+        const months = state.allMonths.filter(m => {
+            if (!site.months[m]?.keywords.length) return false;
+            const [mm, yy] = m.replace('T', '').split('/').map(Number);
+            const mValue = yy * 12 + mm;
+            return mValue < currentMonthValue; // exclude current month and future
+        });
         if (!months.length) return '';
         // Reverse so newest month is first in display, but keep original order for comparison logic
         const monthsForDisplay = [...months].reverse();
