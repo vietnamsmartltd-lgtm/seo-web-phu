@@ -174,10 +174,26 @@ function getLatestMonthWithData() {
 
 function getDefaultReportMonth() {
     const now = new Date();
-    let month = now.getMonth(); let year = now.getFullYear();
-    if (month === 0) { month = 12; year--; }
+    // Always pick previous month: e.g. March 2026 → February 2026
+    let month = now.getMonth(); // getMonth() is 0-indexed, so March = 2, which equals "tháng 2" (previous month)
+    let year = now.getFullYear();
+    if (month === 0) { month = 12; year--; } // January → December of previous year
     const targetKey = `T${month}/${year}`;
     if (state.allMonths.includes(targetKey)) return targetKey;
+    // Fallback: find closest month before the target that has data
+    const targetValue = year * 12 + month;
+    let bestMatch = null;
+    let bestDiff = Infinity;
+    for (const m of state.allMonths) {
+        const [mm, yy] = m.replace('T', '').split('/').map(Number);
+        const mValue = yy * 12 + mm;
+        if (mValue <= targetValue) {
+            const diff = targetValue - mValue;
+            if (diff < bestDiff) { bestDiff = diff; bestMatch = m; }
+        }
+    }
+    if (bestMatch) return bestMatch;
+    // Ultimate fallback: latest month with data
     return getLatestMonthWithData();
 }
 
@@ -733,8 +749,29 @@ function renderSiteTabs() {
             const [bm, by] = b.replace('T', '').split('/').map(Number);
             return (by * 12 + bm) - (ay * 12 + am);
         });
-        let latestMonth = months[0] || '';
-        for (const m of months) { if (site.months[m].keywords.length > 0) { latestMonth = m; break; } }
+        // Use the same default report month (previous month) for site tabs
+        const defaultMonth = getDefaultReportMonth();
+        let latestMonth = defaultMonth && site.months[defaultMonth] ? defaultMonth : (months[0] || '');
+        // If the default month doesn't exist for this site, find the closest earlier month
+        if (!site.months[latestMonth] || !site.months[latestMonth]?.keywords.length) {
+            const targetValue = (() => {
+                const match = defaultMonth?.match(/T(\d{1,2})\/(\d{4})/);
+                if (match) return Number(match[2]) * 12 + Number(match[1]);
+                return Infinity;
+            })();
+            let bestMatch = months[0] || '';
+            let bestDiff = Infinity;
+            for (const m of months) {
+                if (!site.months[m]?.keywords.length) continue;
+                const [mm, yy] = m.replace('T', '').split('/').map(Number);
+                const mValue = yy * 12 + mm;
+                if (mValue <= targetValue) {
+                    const diff = targetValue - mValue;
+                    if (diff < bestDiff) { bestDiff = diff; bestMatch = m; }
+                }
+            }
+            latestMonth = bestMatch;
+        }
         state.activeSiteMonths[sheet.name] = latestMonth;
         const section = document.createElement('section');
         section.id = `tab-${sheet.name}`; section.className = 'tab-panel';
